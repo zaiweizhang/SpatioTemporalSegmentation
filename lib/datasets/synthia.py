@@ -125,7 +125,7 @@ class SynthiaVoxelizationDataset(VoxelizationDataset):
   # Split used in the Minkowski ConvNet, CVPR'19
   DATA_PATH_FILE = {
       DatasetPhase.Train: 'train_cvpr19.txt',
-      DatasetPhase.Val: 'val_cvpr19.txt',
+      DatasetPhase.Val: 'test_cvpr19.txt',
       DatasetPhase.Test: 'test_cvpr19.txt'
   }
 
@@ -190,7 +190,7 @@ class SynthiaTemporalVoxelizationDataset(TemporalVoxelizationDataset):
   # Split used in the Minkowski ConvNet, CVPR'19
   DATA_PATH_FILE = {
       DatasetPhase.Train: 'train_cvpr19.txt',
-      DatasetPhase.Val: 'val_cvpr19.txt',
+      DatasetPhase.Val: 'test_cvpr19.txt',
       DatasetPhase.Test: 'test_cvpr19.txt'
   }
 
@@ -284,7 +284,7 @@ class SynthiaCVPR30cmVoxelizationDataset(SynthiaVoxelizationDataset):
 class SynthiaAllSequencesVoxelizationDataset(SynthiaVoxelizationDataset):
   DATA_PATH_FILE = {
       DatasetPhase.Train: 'train_raw.txt',
-      DatasetPhase.Val: 'val_raw.txt',
+      DatasetPhase.Val: 'test_raw.txt',
       DatasetPhase.Test: 'test_raw.txt'
   }
 

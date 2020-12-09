@@ -24,8 +24,8 @@ python -m main \
     --dataset StanfordArea5Dataset \
     --batch_size $BATCH_SIZE \
     --scheduler PolyLR \
-    --model Res16UNet18 \
-    --conv1_kernel_size 5 \
+    --model Res16UNet34 \
+    --conv1_kernel_size 3 \
     --log_dir $LOG_DIR \
     --lr 1e-1 \
     --max_iter 60000 \

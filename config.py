@@ -213,6 +213,22 @@ misc_arg.add_argument('--log_level', type=str, default='INFO', choices=['INFO', 
 misc_arg.add_argument('--num_gpu', type=str2bool, default=1)
 misc_arg.add_argument('--seed', type=int, default=123)
 
+# Distributed Training
+misc_arg.add_argument('--world-size', default=-1, type=int,
+                                        help='number of nodes for distributed training')
+misc_arg.add_argument('--rank', default=-1, type=int,
+                                        help='node rank for distributed training')
+misc_arg.add_argument('--dist-url', default='tcp://224.66.41.62:23456', type=str,
+                                        help='url used to set up distributed training')
+misc_arg.add_argument('--dist-backend', default='nccl', type=str,
+                                        help='distributed backend')
+misc_arg.add_argument('--gpu', default=None, type=int,
+                                        help='GPU id to use.')
+misc_arg.add_argument('--multiprocessing-distributed', action='store_true',
+                                        help='Use multi-processing distributed training to launch '
+                                             'N processes per node, which has N GPUs. This is the '
+                                             'fastest way to use PyTorch for either single node or '
+                                             'multi node data parallel training')
 
 def get_config():
   config = parser.parse_args()

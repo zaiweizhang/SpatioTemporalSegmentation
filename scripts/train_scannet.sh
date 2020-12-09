@@ -9,9 +9,9 @@ set -o pipefail
 export PYTHONUNBUFFERED="True"
 export CUDA_VISIBLE_DEVICES=$1
 
-export BATCH_SIZE=${BATCH_SIZE:-9}
+export BATCH_SIZE=${BATCH_SIZE:-7}
 export MAX_ITER=${MAX_ITER:-120000}
-export MODEL=${MODEL:-Res16UNet34C}
+export MODEL=${MODEL:-Res16UNet34}
 export DATASET=${DATASET:-ScannetVoxelization2cmDataset}
 
 export TIME=$(date +"%Y-%m-%d_%H-%M-%S")

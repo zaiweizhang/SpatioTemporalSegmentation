@@ -1,6 +1,6 @@
-import lib.datasets.synthia as synthia
-import lib.datasets.stanford as stanford
-import lib.datasets.scannet as scannet
+from lib.datasets import synthia
+from lib.datasets import stanford
+from lib.datasets import scannet
 
 DATASETS = []
 

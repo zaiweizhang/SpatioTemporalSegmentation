@@ -25,8 +25,15 @@ from lib.utils import load_state_with_same_shape, get_torch_device, count_parame
 from lib.dataset import initialize_data_loader
 from lib.datasets import load_dataset
 
-from models import load_model, load_wrapper
+import torch.nn.parallel
+import torch.backends.cudnn as cudnn
+import torch.distributed as dist
+import torch.multiprocessing as mp
+import torch.utils.data
+import torch.utils.data.distributed
+
 from checkpoint import init_model_from_weights
+from models import load_model, load_wrapper
 
 ch = logging.StreamHandler(sys.stdout)
 logging.getLogger().setLevel(logging.INFO)
@@ -43,10 +50,43 @@ def main():
     json_config['resume'] = config.resume
     config = edict(json_config)
 
-  if config.is_cuda and not torch.cuda.is_available():
-    raise Exception("No GPU found")
+  ### Distributed
+  if config.dist_url == "env://" and config.world_size == -1:
+    config.world_size = int(os.environ["WORLD_SIZE"])
+
+  ngpus_per_node = torch.cuda.device_count()
+
+  config.distributed = config.world_size > 1 or config.multiprocessing_distributed
+  if config.multiprocessing_distributed:
+    # Since we have ngpus_per_node processes per node, the total world_size
+    # needs to be adjusted accordingly
+    config.world_size = ngpus_per_node * config.world_size
+    # Use torch.multiprocessing.spawn to launch distributed processes: the
+    # main_worker process function
+    mp.spawn(main_worker, nprocs=ngpus_per_node, args=(ngpus_per_node, config))
+  else:
+    # Simply call main_worker function
+    main_worker(config.gpu, ngpus_per_node, config)
+
+def main_worker(gpu, ngpus_per_node, config):
+  config.gpu = gpu
+  
+  #if config.is_cuda and not torch.cuda.is_available():
+  #  raise Exception("No GPU found")
+  if config.gpu is not None:
+    print("Use GPU: {} for training".format(config.gpu))
   device = get_torch_device(config.is_cuda)
 
+  if config.distributed:
+    if config.dist_url == "env://" and config.rank == -1:
+      config.rank = int(os.environ["RANK"])
+    if config.multiprocessing_distributed:
+      # For multiprocessing distributed training, rank needs to be the
+      # global rank among all the processes
+      config.rank = config.rank * ngpus_per_node + gpu
+    dist.init_process_group(backend=config.dist_backend, init_method=config.dist_url,
+                            world_size=config.world_size, rank=config.rank)
+  
   logging.info('===> Configurations')
   dconfig = vars(config)
   for k in dconfig:
@@ -64,10 +104,10 @@ def main():
   if (config.return_transformation ^ config.evaluate_original_pointcloud):
     raise ValueError('Rotation evaluation requires config.evaluate_original_pointcloud=true and '
                      'config.return_transformation=true.')
-
+  
   logging.info('===> Initializing dataloader')
   if config.is_train:
-    train_data_loader = initialize_data_loader(
+    train_data_loader,train_sampler = initialize_data_loader(
         DatasetClass,
         config,
         phase=config.train_phase,
@@ -78,7 +118,7 @@ def main():
         batch_size=config.batch_size,
         limit_numpoints=config.train_limit_numpoints)
 
-    val_data_loader = initialize_data_loader(
+    val_data_loader,val_sampler = initialize_data_loader(
         DatasetClass,
         config,
         num_workers=config.num_val_workers,
@@ -95,7 +135,7 @@ def main():
 
     num_labels = train_data_loader.dataset.NUM_LABELS
   else:
-    test_data_loader = initialize_data_loader(
+    test_data_loader,val_sampler = initialize_data_loader(
         DatasetClass,
         config,
         num_workers=config.num_workers,
@@ -111,7 +151,7 @@ def main():
       num_in_channel = 3  # RGB color
 
     num_labels = test_data_loader.dataset.NUM_LABELS
-
+    
   logging.info('===> Building model')
   NetClass = load_model(config.model)
   if config.wrapper_type == 'None':
@@ -125,12 +165,10 @@ def main():
         wrapper.__name__ + NetClass.__name__, count_parameters(model)))
 
   logging.info(model)
-  model = model.to(device)
 
   if config.weights == 'modelzoo':  # Load modelzoo weights if possible.
     logging.info('===> Loading modelzoo weights')
     model.preload_modelzoo()
-
   # Load weights if specified by the parameter.
   elif config.weights.lower() != 'none':
     logging.info('===> Loading weights: ' + config.weights)
@@ -146,8 +184,28 @@ def main():
       else:
         init_model_from_weights(model, state, freeze_bb=False)
 
+  if config.distributed:
+    # For multiprocessing distributed, DistributedDataParallel constructor
+    # should always set the single device scope, otherwise,
+    # DistributedDataParallel will use all available devices.
+    if config.gpu is not None:
+      torch.cuda.set_device(config.gpu)
+      model.cuda(config.gpu)
+      # When using a single GPU per process and per
+      # DistributedDataParallel, we need to divide the batch size
+      # ourselves based on the total number of GPUs we have
+      config.batch_size = int(config.batch_size / ngpus_per_node)
+      config.num_workers = int((config.num_workers + ngpus_per_node - 1) / ngpus_per_node)
+      model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[config.gpu])
+    else:
+      model.cuda()
+      # DistributedDataParallel will divide and allocate batch_size to all
+      # available GPUs if device_ids are not set
+      model = torch.nn.parallel.DistributedDataParallel(model)
+      
+  #model = model.to(device)
   if config.is_train:
-    train(model, train_data_loader, val_data_loader, config)
+    train(model, train_data_loader, val_data_loader, config, train_sampler=train_sampler, ngpus_per_node=ngpus_per_node)
   else:
     test(model, test_data_loader, config)
 

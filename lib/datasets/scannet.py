@@ -168,4 +168,4 @@ class ScannetVoxelizationDataset(VoxelizationDataset):
 
 
 class ScannetVoxelization2cmDataset(ScannetVoxelizationDataset):
-  VOXEL_SIZE = 0.02
+  VOXEL_SIZE = 0.04
