@@ -67,7 +67,7 @@ def main():
 
   logging.info('===> Initializing dataloader')
   if config.is_train:
-    train_data_loader = initialize_data_loader(
+    train_data_loader, _ = initialize_data_loader(
         DatasetClass,
         config,
         phase=config.train_phase,
@@ -78,7 +78,7 @@ def main():
         batch_size=config.batch_size,
         limit_numpoints=config.train_limit_numpoints)
 
-    val_data_loader = initialize_data_loader(
+    val_data_loader, _ = initialize_data_loader(
         DatasetClass,
         config,
         num_workers=config.num_val_workers,
@@ -95,7 +95,7 @@ def main():
 
     num_labels = train_data_loader.dataset.NUM_LABELS
   else:
-    test_data_loader = initialize_data_loader(
+    test_data_loader, _ = initialize_data_loader(
         DatasetClass,
         config,
         num_workers=config.num_workers,

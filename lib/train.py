@@ -23,7 +23,7 @@ def validate(model, val_data_loader, writer, curr_iter, config, transform_data_f
   return v_mIoU
 
 
-def train(model, data_loader, val_data_loader, config, transform_data_fn=None):
+def train(model, data_loader, val_data_loader, config, train_sampler=None, transform_data_fn=None, ngpus_per_node=1):
   device = get_torch_device(config.is_cuda)
   # Set up the train flag for batch normalization
   model.train()
@@ -62,8 +62,10 @@ def train(model, data_loader, val_data_loader, config, transform_data_fn=None):
     else:
       raise ValueError("=> no checkpoint found at '{}'".format(checkpoint_fn))
 
-  data_iter = data_loader.__iter__()
   while is_training:
+    data_iter = data_loader.__iter__()
+    if train_sampler is not None:
+      train_sampler.set_epoch(epoch)
     for iteration in range(len(data_loader) // config.iter_size):
       optimizer.zero_grad()
       data_time, batch_loss = 0, 0
@@ -134,11 +136,11 @@ def train(model, data_loader, val_data_loader, config, transform_data_fn=None):
         scores.reset()
 
       # Save current status, save before val to prevent occational mem overflow
-      if curr_iter % config.save_freq == 0:
+      if (curr_iter % config.save_freq == 0) and (not config.multiprocessing_distributed or (config.multiprocessing_distributed and config.rank % ngpus_per_node == 0)):
         checkpoint(model, optimizer, epoch, curr_iter, config, best_val_miou, best_val_iter)
 
       # Validation
-      if curr_iter % config.val_freq == 0:
+      if (curr_iter % config.val_freq == 0) and (not config.multiprocessing_distributed or (config.multiprocessing_distributed and config.rank % ngpus_per_node == 0)):
         val_miou = validate(model, val_data_loader, writer, curr_iter, config, transform_data_fn)
         if val_miou > best_val_miou:
           best_val_miou = val_miou

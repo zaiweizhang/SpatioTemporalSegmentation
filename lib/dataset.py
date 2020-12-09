@@ -477,11 +477,16 @@ def initialize_data_loader(DatasetClass,
       'collate_fn': collate_fn,
   }
 
+  if config.multiprocessing_distributed:
+    train_sampler = torch.utils.data.distributed.DistributedSampler(dataset)
+  else:
+    train_sampler = InfSampler(dataset, shuffle)
+  
   if repeat:
-    data_args['sampler'] = InfSampler(dataset, shuffle)
+    data_args['sampler'] = train_sampler
   else:
     data_args['shuffle'] = shuffle
 
   data_loader = DataLoader(**data_args)
 
-  return data_loader
+  return data_loader, train_sampler

@@ -202,8 +202,7 @@ def main_worker(gpu, ngpus_per_node, config):
       # DistributedDataParallel will divide and allocate batch_size to all
       # available GPUs if device_ids are not set
       model = torch.nn.parallel.DistributedDataParallel(model)
-      
-  #model = model.to(device)
+
   if config.is_train:
     train(model, train_data_loader, val_data_loader, config, train_sampler=train_sampler, ngpus_per_node=ngpus_per_node)
   else:
