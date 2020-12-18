@@ -27,7 +27,7 @@ python -m main_distributed \
        --conv1_kernel_size 3 \
        --log_dir $LOG_DIR \
        --lr 1e-1 \
-       --max_iter 20000 \
+       --max_iter 60000 \
        --data_aug_color_trans_ratio 0.05 \
        --data_aug_color_jitter_std 0.005 \
        --train_phase train \
