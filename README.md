@@ -3,7 +3,7 @@
 
 # Spatio-Temporal Segmentation
 
-This repository contains the accompanying code for [4D-SpatioTemporal ConvNets: Minkowski Convolutional Neural Networks, CVPR'19](https://arxiv.org/abs/1904.08755) and modified code for finetuning with models pretrained with [DepthContrast](paper link here).
+This repository contains the accompanying code for [4D-SpatioTemporal ConvNets: Minkowski Convolutional Neural Networks, CVPR'19](https://arxiv.org/abs/1904.08755) and modified code for finetuning with models pretrained with [DepthContrast](https://arxiv.org/abs/2101.02691).
 
 ## Change Log
 To decrease the training or finetuning time, we added distributed training in the framework.
